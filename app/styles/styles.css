@@ -1,0 +1,67 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #121212; /* Almost black background */
+  color: #f0f0f0; /* Almost white text */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  width: 80%;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center; /* Center all content */
+}
+
+/* Center the main logo */
+.logo {
+  display: flex;
+  justify-content: center; /* Center the logo horizontally */
+  margin-bottom: 30px;
+}
+
+/* Text section styling */
+.text-section p {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+/* Balances section */
+.balances {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column; /* Align balances vertically */
+}
+
+.balance-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px; /* Add spacing between the two balance lines */
+}
+
+.balance-item img {
+  width: 30px; /* Control the size of the token logos */
+  height: 30px;
+}
+
+.balance-item p {
+  font-size: 18px;
+  margin: 0; /* Remove any default margin */
+}
+
+/* Bottom text styling */
+.bottom-text p {
+  font-size: 18px;
+  margin-top: 20px;
+}
