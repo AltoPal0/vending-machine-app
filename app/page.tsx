@@ -970,79 +970,82 @@ const SUYT1_ABI = [
     }
   ];
 
-export default function Home() {
-  const [account, setAccount] = useState<string | null>(null);
-  const [ethBalance, setEthBalance] = useState<string | null>(null);
-  const [usdcBalance, setUsdcBalance] = useState<string | null>(null);
-  const [suyt1Balance, setSuyt1Balance] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false); // Track connection status
-
-  useEffect(() => {
-    // Only attempt MetaMask connection and data fetching on the client side
-    const connectWalletAndFetchBalances = async () => {
+  export default function Home() {
+    const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+    const [account, setAccount] = useState<string | null>(null);
+    const [ethBalance, setEthBalance] = useState<string>('');
+    const [usdcBalance, setUsdcBalance] = useState<string>('');
+    const [suyt1Balance, setSuyt1Balance] = useState<string>('');
+  
+    // Connect to MetaMask and fetch balances
+    const connectWallet = async () => {
       if (typeof window !== 'undefined' && (window as any).ethereum) {
         try {
-          const provider = new ethers.BrowserProvider((window as any).ethereum);
-          await provider.send("eth_requestAccounts", []);
-
-          const signer = await provider.getSigner();
+          const newProvider = new ethers.BrowserProvider((window as any).ethereum);
+          await newProvider.send("eth_requestAccounts", []);
+          setProvider(newProvider);
+  
+          const signer = await newProvider.getSigner();
           const userAccount = await signer.getAddress();
           setAccount(userAccount);
-
+  
           // Fetch ETH balance
-          const balanceWei = await provider.getBalance(userAccount);
-          setEthBalance(ethers.formatEther(balanceWei));
-
+          const balanceWei = await newProvider.getBalance(userAccount);
+          setEthBalance(ethers.formatEther(balanceWei)); // Converts to ETH with 18 decimals
+  
           // Fetch mockUSDC and SUYT1 balances
           await fetchTokenBalances(signer, userAccount);
-
-          setIsConnected(true); // Update connection status
-
+  
         } catch (error) {
-          console.error("Error connecting to MetaMask or fetching balances:", error);
+          console.error("Error connecting to MetaMask:", error);
         }
       } else {
-        console.error("MetaMask is not installed. Please install MetaMask to continue.");
+        alert("MetaMask is not installed. Please install MetaMask to continue.");
       }
     };
-
-    // Only run if MetaMask is available
-    if (typeof window !== 'undefined' && (window as any).ethereum) {
-      connectWalletAndFetchBalances();
-    }
-  }, []);
-
-  // Function to fetch mockUSDC and SUYT1 token balances
-  const fetchTokenBalances = async (signer: ethers.Signer, userAccount: string) => {
-    try {
-      const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
-      const usdcBalanceRaw = await usdcContract.balanceOf(userAccount);
-      setUsdcBalance(ethers.formatUnits(usdcBalanceRaw, 6)); // 6 decimals for USDC
-
-      const suyt1Contract = new ethers.Contract(SUYT1_ADDRESS, SUYT1_ABI, signer);
-      const suyt1BalanceRaw = await suyt1Contract.balanceOf(userAccount);
-      setSuyt1Balance(ethers.formatUnits(suyt1BalanceRaw, 18)); // 18 decimals for SUYT1
-
-    } catch (error) {
-      console.error("Error fetching token balances:", error);
-    }
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '50px' }}>
-      <h1>Welcome to the MetaMask Connection Page</h1>
-      {isConnected && account ? (
-        <>
-          <p>Connected Account: {account}</p>
-          <p>ETH Balance: {ethBalance} ETH</p>
-          <p>mockUSDC Balance: {usdcBalance} USDC</p>
-          <p>SUYT1 Balance: {suyt1Balance} SUYT1</p>
-        </>
-      ) : (
-        <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', fontSize: '16px' }}>
-          Connect Wallet
-        </button>
-      )}
-    </div>
-  );
-}
+  
+    // Function to fetch mockUSDC and SUYT1 token balances
+    const fetchTokenBalances = async (signer: ethers.Signer, userAccount: string) => {
+      try {
+        // mockUSDC (6 decimals)
+        const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
+        const usdcBalanceRaw = await usdcContract.balanceOf(userAccount);
+        const usdcBalanceFormatted = ethers.formatUnits(usdcBalanceRaw, 6); // 6 decimals
+        setUsdcBalance(parseFloat(usdcBalanceFormatted).toFixed(2)); // Display 2 decimals
+  
+        // SUYT1 (18 decimals)
+        const suyt1Contract = new ethers.Contract(SUYT1_ADDRESS, SUYT1_ABI, signer);
+        const suyt1BalanceRaw = await suyt1Contract.balanceOf(userAccount);
+        const suyt1BalanceFormatted = ethers.formatUnits(suyt1BalanceRaw, 18); // 18 decimals
+        setSuyt1Balance(parseFloat(suyt1BalanceFormatted).toFixed(4)); // Display 4 decimals
+  
+      } catch (error) {
+        console.error("Error fetching token balances:", error);
+      }
+    };
+  
+    // Automatically connect to MetaMask if already connected
+    useEffect(() => {
+      if ((window as any).ethereum && !account) {
+        connectWallet();
+      }
+    }, [account]);
+  
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '50px' }}>
+        <h1>Welcome to the MetaMask Connection Page</h1>
+        {account ? (
+          <>
+            <p>Connected Account: {account}</p>
+            <p>ETH Balance: {ethBalance} ETH</p>
+            <p>mockUSDC Balance: {usdcBalance} USDC</p>
+            <p>SUYT1 Balance: {suyt1Balance} SUYT1</p>
+          </>
+        ) : (
+          <button onClick={connectWallet} style={{ padding: '10px 20px', fontSize: '16px' }}>
+            Connect Wallet
+          </button>
+        )}
+      </div>
+    );
+  }
