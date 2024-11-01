@@ -975,6 +975,12 @@ export default function Home() {
   const [ethBalance, setEthBalance] = useState<string>('');
   const [usdcBalance, setUsdcBalance] = useState<string>('');
   const [suyt1Balance, setSuyt1Balance] = useState<string>('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // Only set to true after component mounts on the client
+    setIsClient(true);
+  }, []);
 
   // Connect to MetaMask and fetch balances
   const connectWallet = async () => {
@@ -990,7 +996,7 @@ export default function Home() {
 
         // Fetch ETH balance
         const balanceWei = await newProvider.getBalance(userAccount);
-        setEthBalance(ethers.formatEther(balanceWei)); // Converts to ETH with 18 decimals
+        setEthBalance(ethers.formatEther(balanceWei));
 
         // Fetch mockUSDC and SUYT1 balances
         await fetchTokenBalances(signer, userAccount);
@@ -1003,34 +1009,25 @@ export default function Home() {
     }
   };
 
-  // Function to fetch mockUSDC and SUYT1 token balances
   const fetchTokenBalances = async (signer: ethers.Signer, userAccount: string) => {
     try {
-      // mockUSDC (6 decimals)
       const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
       const usdcBalanceRaw = await usdcContract.balanceOf(userAccount);
       const usdcBalanceFormatted = ethers.formatUnits(usdcBalanceRaw, 6); // 6 decimals
-      setUsdcBalance(parseFloat(usdcBalanceFormatted).toFixed(2)); // Display 2 decimals
+      setUsdcBalance(parseFloat(usdcBalanceFormatted).toFixed(2));
 
-      // SUYT1 (18 decimals)
       const suyt1Contract = new ethers.Contract(SUYT1_ADDRESS, SUYT1_ABI, signer);
       const suyt1BalanceRaw = await suyt1Contract.balanceOf(userAccount);
       const suyt1BalanceFormatted = ethers.formatUnits(suyt1BalanceRaw, 18); // 18 decimals
-      setSuyt1Balance(parseFloat(suyt1BalanceFormatted).toFixed(4)); // Display 4 decimals
+      setSuyt1Balance(parseFloat(suyt1BalanceFormatted).toFixed(4));
 
     } catch (error) {
       console.error("Error fetching token balances:", error);
     }
   };
 
-  // Automatically connect to MetaMask if already connected
-  useEffect(() => {
-    if ((window as any).ethereum && !account) {
-      connectWallet();
-    }
-  }, [account]);
-
-  return (
+  // Only render wallet info if on the client side
+  return isClient ? (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '50px' }}>
       <h1>Welcome to the MetaMask Connection Page</h1>
       {account ? (
@@ -1046,5 +1043,5 @@ export default function Home() {
         </button>
       )}
     </div>
-  );
+  ) : null; // Render nothing on the server side
 }
