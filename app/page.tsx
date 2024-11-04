@@ -3,7 +3,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import dynamic from 'next/dynamic';
 
 // Replace these with your actual contract addresses and ABIs
 const mockUSDC_ADDRESS = "0x6f183a566C879b06630DB90dC236f600A22130b2";
@@ -1225,8 +1224,6 @@ const SUYT2TokenSale_ABI = [
   }
 ];
 
-// Dynamically import MetaMaskConnector with SSR disabled
-const MetaMaskConnector = dynamic(() => import('./MetaMaskConnector'), { ssr: false });
 
 
 export default function Home() {
