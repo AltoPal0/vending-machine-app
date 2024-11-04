@@ -3,6 +3,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import dynamic from 'next/dynamic';
 
 // Replace these with your actual contract addresses and ABIs
 const mockUSDC_ADDRESS = "0x6f183a566C879b06630DB90dC236f600A22130b2";
@@ -1224,8 +1225,25 @@ const SUYT2TokenSale_ABI = [
   }
 ];
 
+// Dynamically import MetaMaskConnector with SSR disabled
+const MetaMaskConnector = dynamic(() => import('./MetaMaskConnector'), { ssr: false });
+
 
 export default function Home() {
+  // Step 1: Suppress hydration warning
+  useEffect(() => {
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+      if (typeof args[0] === 'string' && args[0].includes('Hydration failed')) {
+        return;
+      }
+      originalConsoleError(...args);
+    };
+    return () => {
+      console.error = originalConsoleError; // Restore original error function on cleanup
+    };
+  }, []);
+
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [account, setAccount] = useState<string | null>(null);
   const [ethBalance, setEthBalance] = useState<string>('');
@@ -1234,9 +1252,9 @@ export default function Home() {
   const [tokenPriceETH, setTokenPriceETH] = useState<string>('');
   const [tokenPriceUSDC, setTokenPriceUSDC] = useState<string>('');
   const [numTokens, setNumTokens] = useState<number>(1);  // Default to 1 token
-
   const [contractSuyt1Balance, setContractSuyt1Balance] = useState<string>('');
   const [contractUsdcBalance, setContractUsdcBalance] = useState<string>('');
+  const [autoconnect, setAutoconnect] = useState(false); // Toggle for autoconnect
 
 
   // Connect to MetaMask and fetch balances
@@ -1377,13 +1395,14 @@ export default function Home() {
       console.error("Error buying tokens with USDC:", error);
     }
   };
+  
 
   // Automatically connect to MetaMask if already connected
-  useEffect(() => {
-    if ((window as any).ethereum && !account) {
-      connectWallet();
-    }
-  }, [account]);
+  // useEffect(() => {
+  //   if ((window as any).ethereum && !account) {
+  //     connectWallet();
+  //   }
+  // }, [account]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '50px' }}>
@@ -1409,7 +1428,7 @@ export default function Home() {
           <button onClick={() => buyTokensWithUSDC(numTokens)}>Buy SUYT1 with USDC</button>
         </>
       ) : (
-        <button onClick={connectWallet} style={{ padding: '10px 20px', fontSize: '16px' }}>
+        <button onClick={() => { setAutoconnect(true); connectWallet(); }} style={{ padding: '10px 20px', fontSize: '16px' }}>
           Connect Wallet
         </button>
       )}
