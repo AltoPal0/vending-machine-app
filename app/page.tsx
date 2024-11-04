@@ -1233,6 +1233,11 @@ export default function Home() {
   const [suyt1Balance, setSuyt1Balance] = useState<string>('');
   const [tokenPriceETH, setTokenPriceETH] = useState<string>('');
   const [tokenPriceUSDC, setTokenPriceUSDC] = useState<string>('');
+  const [numTokens, setNumTokens] = useState<number>(1);  // Default to 1 token
+
+  const [contractSuyt1Balance, setContractSuyt1Balance] = useState<string>('');
+  const [contractUsdcBalance, setContractUsdcBalance] = useState<string>('');
+
 
   // Connect to MetaMask and fetch balances
   const connectWallet = async () => {
@@ -1255,6 +1260,9 @@ export default function Home() {
 
         // Fetch token prices for SUYT1
         await fetchTokenPrices(signer);
+
+        // Fetch contract balances for SUYT1 and USDC
+        await fetchContractBalances(signer);
 
       } catch (error) {
         console.error("Error connecting to MetaMask:", error);
@@ -1300,6 +1308,76 @@ export default function Home() {
     }
   };
 
+  const fetchContractBalances = async (signer: ethers.Signer) => {
+   
+    const suyt1Contract = new ethers.Contract(SUYT1_ADDRESS, SUYT1_ABI, signer);
+    const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
+
+    try {
+      // Fetch the SUYT1 token balance of the SUYT2TokenSale contract
+      const suyt1BalanceRaw = await suyt1Contract.balanceOf(SUYT2TokenSale_ADDRESS);
+      const suyt1BalanceFormatted = ethers.formatUnits(suyt1BalanceRaw, 18); // 18 decimals for SUYT1
+      setContractSuyt1Balance(parseFloat(suyt1BalanceFormatted).toFixed(4)); // Display 4 decimals
+
+      // Fetch the USDC balance of the SUYT2TokenSale contract
+      const usdcBalanceRaw = await usdcContract.balanceOf(SUYT2TokenSale_ADDRESS);
+      const usdcBalanceFormatted = ethers.formatUnits(usdcBalanceRaw, 6); // 6 decimals for USDC
+      setContractUsdcBalance(parseFloat(usdcBalanceFormatted).toFixed(2)); // Display 2 decimals
+    } catch (error) {
+      console.error("Error fetching contract balances:", error);
+    }
+  };
+
+  const buyTokensWithETH = async (numTokens: any) => {
+    if (!provider || !account) return;
+
+    const signer = await provider.getSigner();
+    const tokenSaleContract = new ethers.Contract(SUYT2TokenSale_ADDRESS, SUYT2TokenSale_ABI, signer);
+    const priceInWei = ethers.parseEther((numTokens * 0.007).toString());  // Assuming 0.007 ETH per token
+
+    try {
+      const tx = await tokenSaleContract.buyTokens(numTokens, { value: priceInWei });
+      await tx.wait();
+      console.log(`Successfully bought ${numTokens} SUYT1 tokens with ETH.`);
+    } catch (error) {
+      console.error("Error buying tokens with ETH:", error);
+    }
+  };
+
+  const approveUSDC = async (amount: any) => {
+    if (!provider || !account) return;
+
+    const signer = await provider.getSigner();
+    const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
+
+    try {
+      const tx = await usdcContract.approve(SUYT2TokenSale_ADDRESS, amount);
+      await tx.wait();
+      console.log(`Approved ${amount} USDC for spending by the token sale contract.`);
+    } catch (error) {
+      console.error("Error approving USDC:", error);
+    }
+  };
+
+  const buyTokensWithUSDC = async (numTokens: any) => {
+    if (!provider || !account) return;
+
+    const signer = await provider.getSigner();
+    const tokenSaleContract = new ethers.Contract(SUYT2TokenSale_ADDRESS, SUYT2TokenSale_ABI, signer);
+    const usdcAmount = BigInt(numTokens * 30 * 10 ** 6);  // 30 USDC per token
+
+    // Approve the token sale contract to spend USDC on the user's behalf
+    await approveUSDC(usdcAmount);
+
+    try {
+      const tx = await tokenSaleContract.buyTokensWithUSDCcoin(numTokens);
+      await tx.wait();
+      console.log(`Successfully bought ${numTokens} SUYT1 tokens with USDC.`);
+    } catch (error) {
+      console.error("Error buying tokens with USDC:", error);
+    }
+  };
+
   // Automatically connect to MetaMask if already connected
   useEffect(() => {
     if ((window as any).ethereum && !account) {
@@ -1318,6 +1396,17 @@ export default function Home() {
           <p>SUYT1 Balance: {suyt1Balance} SUYT1</p>
           <p>SUYT1 Token Price: {tokenPriceETH} ETH</p>
           <p>SUYT1 Token Price: {tokenPriceUSDC} USDC</p>
+          <p>SUYT1 Contract Balance: {contractSuyt1Balance} SUYT1</p>
+          <p>USDC Contract Balance: {contractUsdcBalance} USDC</p>
+          <input
+            type="number"
+            value={numTokens}
+            onChange={(e) => setNumTokens(Number(e.target.value))}
+            placeholder="Enter number of SUYT1 tokens"
+            style={{ padding: '5px', fontSize: '16px', marginTop: '10px' }}
+          />
+          <button onClick={() => buyTokensWithETH(numTokens)}>Buy SUYT1 with ETH</button>
+          <button onClick={() => buyTokensWithUSDC(numTokens)}>Buy SUYT1 with USDC</button>
         </>
       ) : (
         <button onClick={connectWallet} style={{ padding: '10px 20px', fontSize: '16px' }}>
