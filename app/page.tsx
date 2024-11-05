@@ -3,6 +3,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import './styles/globals.css'; // Importing Tailwind styles from the correct path
+
 
 // Replace these with your actual contract addresses and ABIs
 const mockUSDC_ADDRESS = "0x6f183a566C879b06630DB90dC236f600A22130b2";
@@ -1251,6 +1253,7 @@ export default function Home() {
   const [numTokens, setNumTokens] = useState<number>(1);  // Default to 1 token
   const [contractSuyt1Balance, setContractSuyt1Balance] = useState<string>('');
   const [contractUsdcBalance, setContractUsdcBalance] = useState<string>('');
+  const [contractETHBalance, setContractETHBalance] = useState<string>('');
   const [autoconnect, setAutoconnect] = useState(false); // Toggle for autoconnect
 
 
@@ -1270,6 +1273,9 @@ export default function Home() {
         const balanceWei = await newProvider.getBalance(userAccount);
         setEthBalance(ethers.formatEther(balanceWei)); // Converts to ETH with 18 decimals
 
+        const ethBalanceRaw = await newProvider.getBalance(SUYT2TokenSale_ADDRESS);
+        setContractETHBalance(ethers.formatEther(ethBalanceRaw)); 
+
         // Fetch mockUSDC and SUYT1 balances
         await fetchTokenBalances(signer, userAccount);
 
@@ -1285,6 +1291,13 @@ export default function Home() {
     } else {
       alert("MetaMask is not installed. Please install MetaMask to continue.");
     }
+  };
+
+  // Disconnect MetaMask
+  const disconnectWallet = () => {
+    setProvider(null);
+    setAccount(null);
+    // This will reset the state and prompt for permission on the next connect attempt
   };
 
   // Function to fetch mockUSDC and SUYT1 token balances
@@ -1327,6 +1340,7 @@ export default function Home() {
    
     const suyt1Contract = new ethers.Contract(SUYT1_ADDRESS, SUYT1_ABI, signer);
     const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
+    
 
     try {
       // Fetch the SUYT1 token balance of the SUYT2TokenSale contract
@@ -1338,6 +1352,7 @@ export default function Home() {
       const usdcBalanceRaw = await usdcContract.balanceOf(SUYT2TokenSale_ADDRESS);
       const usdcBalanceFormatted = ethers.formatUnits(usdcBalanceRaw, 6); // 6 decimals for USDC
       setContractUsdcBalance(parseFloat(usdcBalanceFormatted).toFixed(2)); // Display 2 decimals
+
     } catch (error) {
       console.error("Error fetching contract balances:", error);
     }
@@ -1402,30 +1417,70 @@ export default function Home() {
   // }, [account]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '50px' }}>
-      <h1>Welcome to the MetaMask Connection Page</h1>
+    <div className="flex flex-col items-center mt-10 space-y-10 bg-gray-900 min-h-screen text-white p-6">
+      <h1 className="text-3xl font-bold">NEYX SandBox</h1>
+
       {account ? (
-        <>
-          <p>Connected Account: {account}</p>
-          <p>ETH Balance: {ethBalance} ETH</p>
-          <p>mockUSDC Balance: {usdcBalance} USDC</p>
-          <p>SUYT1 Balance: {suyt1Balance} SUYT1</p>
-          <p>SUYT1 Token Price: {tokenPriceETH} ETH</p>
-          <p>SUYT1 Token Price: {tokenPriceUSDC} USDC</p>
-          <p>SUYT1 Contract Balance: {contractSuyt1Balance} SUYT1</p>
-          <p>USDC Contract Balance: {contractUsdcBalance} USDC</p>
-          <input
-            type="number"
-            value={numTokens}
-            onChange={(e) => setNumTokens(Number(e.target.value))}
-            placeholder="Enter number of SUYT1 tokens"
-            style={{ padding: '5px', fontSize: '16px', marginTop: '10px' }}
-          />
-          <button onClick={() => buyTokensWithETH(numTokens)}>Buy SUYT1 with ETH</button>
-          <button onClick={() => buyTokensWithUSDC(numTokens)}>Buy SUYT1 with USDC</button>
-        </>
+        <div className="flex flex-col space-y-6 w-full max-w-xl">
+          {/* User Account Section */}
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">User Account</h2>
+            <p><span className="font-medium">Account:</span> {account}</p>
+            <p><span className="font-medium">Balances:</span> </p>
+            <p><span className="font-medium">ETH:</span> <span className="font-bold text-blue-400">{parseFloat(ethBalance).toFixed(4)} ETH</span></p>
+            <p><span className="font-medium">USDC:</span> <span className="font-bold text-blue-400">{parseFloat(usdcBalance).toFixed(2)} USDC</span></p>
+            <p><span className="font-medium">SUYT1:</span> <span className="font-bold text-blue-400">{parseFloat(suyt1Balance).toFixed(2)} SUYT1</span></p>
+          </div>
+
+          {/* Contract Info Section */}
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Contract Info</h2>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex-1 bg-gray-700 p-4 rounded-lg">
+              <p><span className="font-medium">SUYT1 Token Price:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceETH).toFixed(4)} ETH</span></p>
+                <p><span className="font-medium">in ETH:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceETH).toFixed(4)} ETH</span></p>
+                <p><span className="font-medium">in UDSC:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceUSDC).toFixed(2)} USDC</span></p>
+              </div>
+              <div className="flex-1 bg-gray-700 p-4 rounded-lg">
+              <p><span className="font-medium">Contract Balances</span></p>
+                <p><span className="font-medium">SUYT1 :</span> <span className="font-bold text-orange-400">{parseFloat(contractSuyt1Balance).toFixed(2)} </span></p>
+                <p><span className="font-medium">USDC :</span> <span className="font-bold text-orange-400">{parseFloat(contractUsdcBalance).toFixed(2)} </span></p>
+                <p><span className="font-medium">ETH :</span> <span className="font-bold text-orange-400">{parseFloat(contractETHBalance).toFixed(4)} </span></p>
+              </div>
+            </div>
+          </div>
+
+          {/* Buy Tokens Section */}
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Buy Tokens</h2>
+            <div className="flex items-center space-x-4 mb-4">
+              <input
+                type="number"
+                value={numTokens}
+                onChange={(e) => setNumTokens(Number(e.target.value))}
+                placeholder="Tokens"
+                className="p-2 w-20 border border-gray-600 rounded-lg bg-gray-700 text-white"
+              />
+              <button
+                onClick={() => buyTokensWithETH(numTokens)}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Buy with ETH
+              </button>
+              <button
+                onClick={() => buyTokensWithUSDC(numTokens)}
+                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                Buy with USDC
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
-        <button onClick={() => { setAutoconnect(true); connectWallet(); }} style={{ padding: '10px 20px', fontSize: '16px' }}>
+        <button
+          onClick={() => { setAutoconnect(true); connectWallet(); }}
+          className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-orange-500"
+        >
           Connect Wallet
         </button>
       )}
