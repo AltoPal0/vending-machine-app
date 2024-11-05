@@ -4,1244 +4,24 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import './styles/globals.css'; // Importing Tailwind styles from the correct path
-
-
-// Replace these with your actual contract addresses and ABIs
-const mockUSDC_ADDRESS = "0x6f183a566C879b06630DB90dC236f600A22130b2";
-const SUYT1_ADDRESS = "0xff52a4D0Dd66125Cae78222B5F397531CCB76DE8";
-const SUYT2TokenSale_ADDRESS = "0x19fB0271e0F0380645b15C409e43e92F8774b5F1";
-
-const mockUSDC_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "initialSupply",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "allowance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientAllowance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "balance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientBalance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "approver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidApprover",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidReceiver",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSender",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSpender",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Approval",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Transfer",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "allowance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "balanceOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "mint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transferFrom",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
-const SUYT1_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "initialOwner",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "ECDSAInvalidSignature",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "length",
-        "type": "uint256"
-      }
-    ],
-    "name": "ECDSAInvalidSignatureLength",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "s",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ECDSAInvalidSignatureS",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "allowance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientAllowance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "balance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "needed",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC20InsufficientBalance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "approver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidApprover",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidReceiver",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSender",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "ERC20InvalidSpender",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
-      }
-    ],
-    "name": "ERC2612ExpiredSignature",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "signer",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "ERC2612InvalidSigner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "currentNonce",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidAccountNonce",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "InvalidShortString",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableInvalidOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableUnauthorizedAccount",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "str",
-        "type": "string"
-      }
-    ],
-    "name": "StringTooLong",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Approval",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [],
-    "name": "EIP712DomainChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Transfer",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "DOMAIN_SEPARATOR",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "allowance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "balanceOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "eip712Domain",
-    "outputs": [
-      {
-        "internalType": "bytes1",
-        "name": "fields",
-        "type": "bytes1"
-      },
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "version",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "chainId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "verifyingContract",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "salt",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "extensions",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "mint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "nonces",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "v",
-        "type": "uint8"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "r",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "s",
-        "type": "bytes32"
-      }
-    ],
-    "name": "permit",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transferFrom",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
-const SUYT2TokenSale_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "_SUYT1Token",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IERC20",
-        "name": "_USDCcoin",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableInvalidOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableUnauthorizedAccount",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "message",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "DebugLog",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "SUYT1Token",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "USDCcoin",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "numFullTokens",
-        "type": "uint256"
-      }
-    ],
-    "name": "buyTokens",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "numFullTokens",
-        "type": "uint256"
-      }
-    ],
-    "name": "buyTokensWithUSDCcoin",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "depositFullTokens",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_priceInEth",
-        "type": "uint256"
-      }
-    ],
-    "name": "setTokenPriceETH",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_priceInUsdc",
-        "type": "uint256"
-      }
-    ],
-    "name": "setTokenPriceUSDC",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "tokenPriceETH",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "tokenPriceUSDC",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdrawETH",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdrawUSDCcoins",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
+import { contracts } from './contracts';
 
 
 
 export default function Home() {
   // Step 1: Suppress hydration warning
-  useEffect(() => {
-    const originalConsoleError = console.error;
-    console.error = (...args) => {
-      if (typeof args[0] === 'string' && args[0].includes('Hydration failed')) {
-        return;
-      }
-      originalConsoleError(...args);
-    };
-    return () => {
-      console.error = originalConsoleError; // Restore original error function on cleanup
-    };
-  }, []);
+  // useEffect(() => {
+  //   const originalConsoleError = console.error;
+  //   console.error = (...args) => {
+  //     if (typeof args[0] === 'string' && args[0].includes('Hydration failed')) {
+  //       return;
+  //     }
+  //     originalConsoleError(...args);
+  //   };
+  //   return () => {
+  //     console.error = originalConsoleError; // Restore original error function on cleanup
+  //   };
+  // }, []);
 
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [account, setAccount] = useState<string | null>(null);
@@ -1255,10 +35,15 @@ export default function Home() {
   const [contractUsdcBalance, setContractUsdcBalance] = useState<string>('');
   const [contractETHBalance, setContractETHBalance] = useState<string>('');
   const [autoconnect, setAutoconnect] = useState(false); // Toggle for autoconnect
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [waitingTx, setWaitingTx] = useState<boolean>(false);
+
 
 
   // Connect to MetaMask and fetch balances
   const connectWallet = async () => {
+    setLoading(true);
     if (typeof window !== 'undefined' && (window as any).ethereum) {
       try {
         const newProvider = new ethers.BrowserProvider((window as any).ethereum);
@@ -1273,8 +58,8 @@ export default function Home() {
         const balanceWei = await newProvider.getBalance(userAccount);
         setEthBalance(ethers.formatEther(balanceWei)); // Converts to ETH with 18 decimals
 
-        const ethBalanceRaw = await newProvider.getBalance(SUYT2TokenSale_ADDRESS);
-        setContractETHBalance(ethers.formatEther(ethBalanceRaw)); 
+        const ethBalanceRaw = await newProvider.getBalance(contracts.SUYT2TokenSale.address);
+        setContractETHBalance(ethers.formatEther(ethBalanceRaw));
 
         // Fetch mockUSDC and SUYT1 balances
         await fetchTokenBalances(signer, userAccount);
@@ -1291,6 +76,7 @@ export default function Home() {
     } else {
       alert("MetaMask is not installed. Please install MetaMask to continue.");
     }
+    setLoading(false);
   };
 
   // Disconnect MetaMask
@@ -1304,13 +90,13 @@ export default function Home() {
   const fetchTokenBalances = async (signer: ethers.Signer, userAccount: string) => {
     try {
       // mockUSDC (6 decimals)
-      const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
+      const usdcContract = new ethers.Contract(contracts.mockUSDC.address, contracts.mockUSDC.abi, signer);
       const usdcBalanceRaw = await usdcContract.balanceOf(userAccount);
       const usdcBalanceFormatted = ethers.formatUnits(usdcBalanceRaw, 6); // 6 decimals
       setUsdcBalance(parseFloat(usdcBalanceFormatted).toFixed(2)); // Display 2 decimals
 
       // SUYT1 (18 decimals)
-      const suyt1Contract = new ethers.Contract(SUYT1_ADDRESS, SUYT1_ABI, signer);
+      const suyt1Contract = new ethers.Contract(contracts.SUYT1.address, contracts.SUYT1.abi, signer);
       const suyt1BalanceRaw = await suyt1Contract.balanceOf(userAccount);
       const suyt1BalanceFormatted = ethers.formatUnits(suyt1BalanceRaw, 18); // 18 decimals
       setSuyt1Balance(parseFloat(suyt1BalanceFormatted).toFixed(4)); // Display 4 decimals
@@ -1322,7 +108,7 @@ export default function Home() {
 
   const fetchTokenPrices = async (signer: ethers.Signer) => {
     try {
-      const tokenSaleContract = new ethers.Contract(SUYT2TokenSale_ADDRESS, SUYT2TokenSale_ABI, signer);
+      const tokenSaleContract = new ethers.Contract(contracts.SUYT2TokenSale.address, contracts.SUYT2TokenSale.abi, signer);
 
       // Fetch the token prices
       const priceETH = await tokenSaleContract.tokenPriceETH();
@@ -1337,19 +123,18 @@ export default function Home() {
   };
 
   const fetchContractBalances = async (signer: ethers.Signer) => {
-   
-    const suyt1Contract = new ethers.Contract(SUYT1_ADDRESS, SUYT1_ABI, signer);
-    const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
-    
+
+    const suyt1Contract = new ethers.Contract(contracts.SUYT1.address, contracts.SUYT1.abi, signer);
+    const usdcContract = new ethers.Contract(contracts.mockUSDC.address, contracts.mockUSDC.abi, signer);
 
     try {
       // Fetch the SUYT1 token balance of the SUYT2TokenSale contract
-      const suyt1BalanceRaw = await suyt1Contract.balanceOf(SUYT2TokenSale_ADDRESS);
+      const suyt1BalanceRaw = await suyt1Contract.balanceOf(contracts.SUYT2TokenSale.address);
       const suyt1BalanceFormatted = ethers.formatUnits(suyt1BalanceRaw, 18); // 18 decimals for SUYT1
       setContractSuyt1Balance(parseFloat(suyt1BalanceFormatted).toFixed(4)); // Display 4 decimals
 
       // Fetch the USDC balance of the SUYT2TokenSale contract
-      const usdcBalanceRaw = await usdcContract.balanceOf(SUYT2TokenSale_ADDRESS);
+      const usdcBalanceRaw = await usdcContract.balanceOf(contracts.SUYT2TokenSale.address);
       const usdcBalanceFormatted = ethers.formatUnits(usdcBalanceRaw, 6); // 6 decimals for USDC
       setContractUsdcBalance(parseFloat(usdcBalanceFormatted).toFixed(2)); // Display 2 decimals
 
@@ -1362,52 +147,88 @@ export default function Home() {
     if (!provider || !account) return;
 
     const signer = await provider.getSigner();
-    const tokenSaleContract = new ethers.Contract(SUYT2TokenSale_ADDRESS, SUYT2TokenSale_ABI, signer);
+    const tokenSaleContract = new ethers.Contract(contracts.SUYT2TokenSale.address, contracts.SUYT2TokenSale.abi, signer);
     const priceInWei = ethers.parseEther((numTokens * 0.007).toString());  // Assuming 0.007 ETH per token
+
+    const requiredETH = numTokens * parseFloat(tokenPriceETH);
+    if (parseFloat(ethBalance) < requiredETH) {
+      setErrorMessage(`Insufficient ETH balance. You need ${requiredETH.toFixed(4)} ETH.`);
+      return;
+    }
+    setErrorMessage(null); // Clear error message if any
 
     try {
       const tx = await tokenSaleContract.buyTokens(numTokens, { value: priceInWei });
+      setWaitingTx(true);
       await tx.wait();
       console.log(`Successfully bought ${numTokens} SUYT1 tokens with ETH.`);
+      await fetchTokenBalances(signer, account); // Refresh user's USDC and SUYT1 balances
+      await fetchContractBalances(signer);       // Refresh contract balances for SUYT1 and USDC
     } catch (error) {
       console.error("Error buying tokens with ETH:", error);
     }
-  };
-
-  const approveUSDC = async (amount: any) => {
-    if (!provider || !account) return;
-
-    const signer = await provider.getSigner();
-    const usdcContract = new ethers.Contract(mockUSDC_ADDRESS, mockUSDC_ABI, signer);
-
-    try {
-      const tx = await usdcContract.approve(SUYT2TokenSale_ADDRESS, amount);
-      await tx.wait();
-      console.log(`Approved ${amount} USDC for spending by the token sale contract.`);
-    } catch (error) {
-      console.error("Error approving USDC:", error);
-    }
+    setWaitingTx(false);
   };
 
   const buyTokensWithUSDC = async (numTokens: any) => {
     if (!provider || !account) return;
 
     const signer = await provider.getSigner();
-    const tokenSaleContract = new ethers.Contract(SUYT2TokenSale_ADDRESS, SUYT2TokenSale_ABI, signer);
+    const usdcContract = new ethers.Contract(
+      contracts.mockUSDC.address,
+      contracts.mockUSDC.abi,
+      signer
+    );
+    const tokenSaleContract = new ethers.Contract(
+      contracts.SUYT2TokenSale.address,
+      contracts.SUYT2TokenSale.abi,
+      signer
+    );
+
     const usdcAmount = BigInt(numTokens * 30 * 10 ** 6);  // 30 USDC per token
 
-    // Approve the token sale contract to spend USDC on the user's behalf
-    await approveUSDC(usdcAmount);
+    const requiredUSDC = numTokens * parseFloat(tokenPriceUSDC);
+    if (parseFloat(usdcBalance) < requiredUSDC) {
+      setErrorMessage(`Insufficient USDC balance. You need ${requiredUSDC.toFixed(4)} ETH.`);
+      return;
+    }
+    setErrorMessage(null); // Clear error message if any
 
     try {
+      // Step 1: Check current allowance
+      const currentAllowance = await usdcContract.allowance(account, contracts.SUYT2TokenSale.address);
+      console.log(`allowance : ${currentAllowance}`)
+      setWaitingTx(true);
+      if (currentAllowance < usdcAmount) {
+        // Step 2: Request additional approval if needed
+        const approvalNeeded = usdcAmount - currentAllowance;
+        console.log(`Requesting approval for additional ${ethers.formatUnits(approvalNeeded, 6)} USDC...`);
+
+        // Step 3: Approve the required amount
+        const approveTx = await usdcContract.approve(contracts.SUYT2TokenSale.address, approvalNeeded);
+        await approveTx.wait();
+        console.log(`Approved additional ${ethers.formatUnits(approvalNeeded, 6)} USDC.`);
+        console.log(`New allowance : ${currentAllowance}`)
+
+        // Add a short delay to allow MetaMask to reset between transactions
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      } else {
+        console.log("Sufficient allowance already approved.");
+      }
+  
+
       const tx = await tokenSaleContract.buyTokensWithUSDCcoin(numTokens);
       await tx.wait();
       console.log(`Successfully bought ${numTokens} SUYT1 tokens with USDC.`);
+      await fetchTokenBalances(signer, account); // Refresh user's USDC and SUYT1 balances
+      await fetchContractBalances(signer);       // Refresh contract balances for SUYT1 and USDC
+    console.log("Balances refreshed.");
     } catch (error) {
       console.error("Error buying tokens with USDC:", error);
     }
+    setWaitingTx(false);
   };
-  
+
 
   // Automatically connect to MetaMask if already connected
   // useEffect(() => {
@@ -1420,12 +241,18 @@ export default function Home() {
     <div className="flex flex-col items-center mt-10 space-y-10 bg-gray-900 min-h-screen text-white p-6">
       <h1 className="text-3xl font-bold">NEYX SandBox</h1>
 
-      {account ? (
+      {account && autoconnect ? (
         <div className="flex flex-col space-y-6 w-full max-w-xl">
           {/* User Account Section */}
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">User Account</h2>
-            <p><span className="font-medium">Account:</span> {account}</p>
+            <h2 className="text-xl font-semibold mb-4">User Account </h2>
+            <div className="flex items-center space-x-2 mb-2">
+              <span
+                className={`w-3 h-3 rounded-full ${account ? "bg-green-500" : "bg-red-500"
+                  }`}
+              ></span>
+              <p><span className="font-medium">Adr:</span> {account || "Not Connected"}</p>
+            </div>
             <p><span className="font-medium">Balances:</span> </p>
             <p><span className="font-medium">ETH:</span> <span className="font-bold text-blue-400">{parseFloat(ethBalance).toFixed(4)} ETH</span></p>
             <p><span className="font-medium">USDC:</span> <span className="font-bold text-blue-400">{parseFloat(usdcBalance).toFixed(2)} USDC</span></p>
@@ -1437,12 +264,12 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4">Contract Info</h2>
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 bg-gray-700 p-4 rounded-lg">
-              <p><span className="font-medium">SUYT1 Token Price:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceETH).toFixed(4)} ETH</span></p>
+                <p><span className="font-medium">SUYT1 Token Price:</span></p>
                 <p><span className="font-medium">in ETH:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceETH).toFixed(4)} ETH</span></p>
                 <p><span className="font-medium">in UDSC:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceUSDC).toFixed(2)} USDC</span></p>
               </div>
               <div className="flex-1 bg-gray-700 p-4 rounded-lg">
-              <p><span className="font-medium">Contract Balances</span></p>
+                <p><span className="font-medium">Contract Balances</span></p>
                 <p><span className="font-medium">SUYT1 :</span> <span className="font-bold text-orange-400">{parseFloat(contractSuyt1Balance).toFixed(2)} </span></p>
                 <p><span className="font-medium">USDC :</span> <span className="font-bold text-orange-400">{parseFloat(contractUsdcBalance).toFixed(2)} </span></p>
                 <p><span className="font-medium">ETH :</span> <span className="font-bold text-orange-400">{parseFloat(contractETHBalance).toFixed(4)} </span></p>
@@ -1463,25 +290,37 @@ export default function Home() {
               />
               <button
                 onClick={() => buyTokensWithETH(numTokens)}
-                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                disabled={waitingTx}
+                className={`px-6 py-3 rounded-lg ${waitingTx ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-500 "
+                  } text-white`}
               >
-                Buy with ETH
+                {waitingTx ? "Wait..." : "Buy with ETH"}
+
               </button>
               <button
                 onClick={() => buyTokensWithUSDC(numTokens)}
-                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                className={`px-6 py-3 rounded-lg ${waitingTx ? "bg-gray-400 cursor-not-allowed" : "px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 "
+                } text-white`}
+                
               >
-                Buy with USDC
+                {waitingTx ? "Wait ..." : "Buy with USDC"}
               </button>
+            </div>
+            <div>
+              {errorMessage && (
+                <p className="text-red-500 mt-4">{errorMessage}</p>
+              )}
             </div>
           </div>
         </div>
       ) : (
         <button
           onClick={() => { setAutoconnect(true); connectWallet(); }}
-          className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-orange-500"
+          disabled={loading}
+          className={`px-6 py-3 rounded-lg ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-gray-500 hover:bg-orange-500"
+            } text-white`}
         >
-          Connect Wallet
+          {loading ? "Connecting..." : "Connect Wallet"}
         </button>
       )}
     </div>
