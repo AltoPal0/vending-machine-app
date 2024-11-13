@@ -5,23 +5,11 @@ import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import './styles/globals.css'; // Importing Tailwind styles from the correct path
 import { contracts } from './contracts';
+import Image from 'next/image';
 
 
 
 export default function Home() {
-  // Step 1: Suppress hydration warning
-  // useEffect(() => {
-  //   const originalConsoleError = console.error;
-  //   console.error = (...args) => {
-  //     if (typeof args[0] === 'string' && args[0].includes('Hydration failed')) {
-  //       return;
-  //     }
-  //     originalConsoleError(...args);
-  //   };
-  //   return () => {
-  //     console.error = originalConsoleError; // Restore original error function on cleanup
-  //   };
-  // }, []);
 
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [account, setAccount] = useState<string | null>(null);
@@ -211,18 +199,18 @@ export default function Home() {
         console.log(`New allowance : ${currentAllowance}`)
 
         // Add a short delay to allow MetaMask to reset between transactions
-      await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 1500));
       } else {
         console.log("Sufficient allowance already approved.");
       }
-  
+
 
       const tx = await tokenSaleContract.buyTokensWithUSDCcoin(numTokens);
       await tx.wait();
       console.log(`Successfully bought ${numTokens} SUYT1 tokens with USDC.`);
       await fetchTokenBalances(signer, account); // Refresh user's USDC and SUYT1 balances
       await fetchContractBalances(signer);       // Refresh contract balances for SUYT1 and USDC
-    console.log("Balances refreshed.");
+      console.log("Balances refreshed.");
     } catch (error) {
       console.error("Error buying tokens with USDC:", error);
     }
@@ -231,15 +219,23 @@ export default function Home() {
 
 
   // Automatically connect to MetaMask if already connected
-  // useEffect(() => {
-  //   if ((window as any).ethereum && !account) {
-  //     connectWallet();
-  //   }
-  // }, [account]);
+  useEffect(() => {
+    if ((window as any).ethereum && !account) {
+      setAutoconnect(true);
+      connectWallet();
+    }
+  }, [account]);
 
   return (
     <div className="flex flex-col items-center mt-10 space-y-10 bg-gray-900 min-h-screen text-white p-6">
-      <h1 className="text-3xl font-bold">NEYX SandBox</h1>
+      <div className="flex flex-col items-center space-y-1"> {/* Tighten spacing here */}
+        <img
+          src="/images/LOGO-TEXT-orange.png"
+          alt="Logo"
+          className="w-48 h-auto"
+        />
+        <h3 className="text-xl font-bold">Phase 1</h3>
+      </div>
 
       {account && autoconnect ? (
         <div className="flex flex-col space-y-6 w-full max-w-xl">
@@ -300,8 +296,8 @@ export default function Home() {
               <button
                 onClick={() => buyTokensWithUSDC(numTokens)}
                 className={`px-6 py-3 rounded-lg ${waitingTx ? "bg-gray-400 cursor-not-allowed" : "px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 "
-                } text-white`}
-                
+                  } text-white`}
+
               >
                 {waitingTx ? "Wait ..." : "Buy with USDC"}
               </button>
