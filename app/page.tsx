@@ -7,8 +7,6 @@ import './styles/globals.css'; // Importing Tailwind styles from the correct pat
 import { contracts } from './contracts';
 import Image from 'next/image';
 
-
-
 export default function Home() {
 
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
@@ -27,7 +25,41 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [waitingTx, setWaitingTx] = useState<boolean>(false);
 
-
+  
+  const addTokenToMetaMask = async () => {
+    if (!provider) {
+      alert("Please connect your wallet first.");
+      return;
+    }
+  
+    const tokenAddress = contracts.SUYT1.address; // Replace with your token's contract address
+    const tokenSymbol = "SUYT1"; // Replace with your token's symbol
+    const tokenDecimals = 18; // Replace with your token's decimals
+    const tokenImage = "https://example.com/token-logo.png"; // Replace with the token logo URL
+  
+    try {
+      const wasAdded = await (window as any).ethereum.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC20", // The token type
+          options: {
+            address: tokenAddress,
+            symbol: tokenSymbol,
+            decimals: tokenDecimals,
+            image: tokenImage,
+          },
+        },
+      });
+  
+      if (wasAdded) {
+        console.log("NEYX Token added to MetaMask!");
+      } else {
+        console.log("NEYX Token addition declined.");
+      }
+    } catch (error) {
+      console.error("Error adding token to MetaMask:", error);
+    }
+  };
 
   // Connect to MetaMask and fetch balances
   const connectWallet = async () => {
@@ -149,7 +181,7 @@ export default function Home() {
       const tx = await tokenSaleContract.buyTokens(numTokens, { value: priceInWei });
       setWaitingTx(true);
       await tx.wait();
-      console.log(`Successfully bought ${numTokens} SUYT1 tokens with ETH.`);
+      console.log(`Successfully bought ${numTokens} NEYXT tokens with ETH.`);
       await fetchTokenBalances(signer, account); // Refresh user's USDC and SUYT1 balances
       await fetchContractBalances(signer);       // Refresh contract balances for SUYT1 and USDC
     } catch (error) {
@@ -207,7 +239,7 @@ export default function Home() {
 
       const tx = await tokenSaleContract.buyTokensWithUSDCcoin(numTokens);
       await tx.wait();
-      console.log(`Successfully bought ${numTokens} SUYT1 tokens with USDC.`);
+      console.log(`Successfully bought ${numTokens} NEYXT tokens with USDC.`);
       await fetchTokenBalances(signer, account); // Refresh user's USDC and SUYT1 balances
       await fetchContractBalances(signer);       // Refresh contract balances for SUYT1 and USDC
       console.log("Balances refreshed.");
@@ -237,6 +269,13 @@ export default function Home() {
         <h3 className="text-xl font-bold">Phase 1</h3>
       </div>
 
+      <button
+        onClick={addTokenToMetaMask}
+        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-orange-500"
+      >
+        Add NEYXT Token to MetaMask
+      </button>
+
       {account && autoconnect ? (
         <div className="flex flex-col space-y-6 w-full max-w-xl">
           {/* User Account Section */}
@@ -252,7 +291,7 @@ export default function Home() {
             <p><span className="font-medium">Balances:</span> </p>
             <p><span className="font-medium">ETH:</span> <span className="font-bold text-blue-400">{parseFloat(ethBalance).toFixed(4)} ETH</span></p>
             <p><span className="font-medium">USDC:</span> <span className="font-bold text-blue-400">{parseFloat(usdcBalance).toFixed(2)} USDC</span></p>
-            <p><span className="font-medium">SUYT1:</span> <span className="font-bold text-blue-400">{parseFloat(suyt1Balance).toFixed(2)} SUYT1</span></p>
+            <p><span className="font-medium">NEYXT:</span> <span className="font-bold text-blue-400">{parseFloat(suyt1Balance).toFixed(2)} NEYXT</span></p>
           </div>
 
           {/* Contract Info Section */}
@@ -260,13 +299,13 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4">Contract Info</h2>
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 bg-gray-700 p-4 rounded-lg">
-                <p><span className="font-medium">SUYT1 Token Price:</span></p>
+                <p><span className="font-medium">NEYXT Token Price:</span></p>
                 <p><span className="font-medium">in ETH:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceETH).toFixed(4)} ETH</span></p>
                 <p><span className="font-medium">in UDSC:</span> <span className="font-bold text-orange-400">{parseFloat(tokenPriceUSDC).toFixed(2)} USDC</span></p>
               </div>
               <div className="flex-1 bg-gray-700 p-4 rounded-lg">
                 <p><span className="font-medium">Contract Balances</span></p>
-                <p><span className="font-medium">SUYT1 :</span> <span className="font-bold text-orange-400">{parseFloat(contractSuyt1Balance).toFixed(2)} </span></p>
+                <p><span className="font-medium">NEYXT :</span> <span className="font-bold text-orange-400">{parseFloat(contractSuyt1Balance).toFixed(2)} </span></p>
                 <p><span className="font-medium">USDC :</span> <span className="font-bold text-orange-400">{parseFloat(contractUsdcBalance).toFixed(2)} </span></p>
                 <p><span className="font-medium">ETH :</span> <span className="font-bold text-orange-400">{parseFloat(contractETHBalance).toFixed(4)} </span></p>
               </div>
